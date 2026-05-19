@@ -53,4 +53,14 @@ figure {
 
 canvas {
   touch-action: none;
+  background-color: white;
+}
+
+input {
+  display: block;
+}
+
+.cloudcannon-visual-editor-component {
+  --visual-editor-color: rgba(255, 192, 203, 0.5);
+  background: repeating-linear-gradient(-45deg, var(--visual-editor-color), var(--visual-editor-color) 50px, transparent 50px, transparent 100px);
 }

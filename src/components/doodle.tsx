@@ -101,31 +101,33 @@ export function Doodler() {
         return undefined;
     }
 
-    return (<>
-        <h1>Why not draw something?</h1>
+    return (<div className="cloudcannon-visual-editor-component">
+        <div className="flex-column justify-center">
+            <h1>Why not draw something?</h1>
 
-        <DoodleCanvas
-            canvasRef={canvasRef}
-            loadingState={loadingState}
-            resetLoadingState={() => {setCurrentStateMessage(undefined); setLoadingState(undefined)}}
-            finishDraw={(newPixels: CoordArray) => { setSavedPixels([...savedPixels, [...newPixels]]); }}
-        ></DoodleCanvas>
-        
-        <div style={{height: "50px"}} className="flex-column">
-            <button type="button" disabled={!!currentStateMessage} onClick={undo}>← Undo</button>
+            <DoodleCanvas
+                canvasRef={canvasRef}
+                loadingState={loadingState}
+                resetLoadingState={() => {setCurrentStateMessage(undefined); setLoadingState(undefined)}}
+                finishDraw={(newPixels: CoordArray) => { setSavedPixels([...savedPixels, [...newPixels]]); }}
+            ></DoodleCanvas>
+            
+            <div className="flex-column">
+                <button type="button" disabled={!!currentStateMessage} onClick={undo}>← Undo</button>
+            </div>
+
+            <div className="flex-column">
+                <div>
+                    <label htmlFor="caption">Caption for the new image (required)</label>
+                    <input type="text" id="caption" onInput={(e) => {
+                        setCaption(e.currentTarget.value);
+                    }} />
+                </div>
+
+
+                <button type="button" disabled={!!currentStateMessage || !caption} onClick={submit}>Finish and submit</button>
+                {currentStateMessage ? <p>{currentStateMessage}</p> : undefined}
+            </div>
         </div>
-
-    <div className="flex-column">
-
-        <label>
-            Caption for the new image<br></br>
-            <input type="text" onInput={(e) => {
-                setCaption(e.currentTarget.value);
-            }} />
-        </label>
-
-        <button type="button" disabled={!!currentStateMessage} onClick={submit}>Finish and submit</button>
-        {currentStateMessage ? <p>{currentStateMessage}</p> : undefined}
-    </div>
-    </>)
+    </div>)
 }
