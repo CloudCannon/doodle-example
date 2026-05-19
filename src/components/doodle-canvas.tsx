@@ -1,19 +1,20 @@
-import type { CoordArray } from "../pages/doodle";
-import { useRef, useState, type Dispatch, type PointerEvent, type SetStateAction } from "react";
+import type { CoordArray } from "./doodle";
+import { useState, type PointerEvent, type RefObject } from "react";
 
 interface Props {
-    loadingState: string | undefined;
-    updateLoadingState: Dispatch<SetStateAction<string | undefined>>
+    loadingState: 'saving' | 'saved' | 'error' | undefined;
+    resetLoadingState: () => void
     finishDraw(newPixels: CoordArray): void;
+    canvasRef: RefObject<HTMLCanvasElement | null>
 }
 
-export function DoodleCanvas({loadingState, updateLoadingState, finishDraw}: Props) {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+export function DoodleCanvas({loadingState, resetLoadingState, finishDraw, canvasRef}: Props) {
     const [drawingState, setDrawingState] = useState<boolean>(false);
     const [activePixels, setActivePixels] = useState<CoordArray>([]);
 
     function handlePointerMove(e: PointerEvent<HTMLCanvasElement>) {
         e.preventDefault();
+        e.stopPropagation();
         if (canvasRef.current && drawingState && !loadingState) {
             const previous = activePixels[activePixels.length - 1];
             if (previous) {
@@ -35,8 +36,8 @@ export function DoodleCanvas({loadingState, updateLoadingState, finishDraw}: Pro
     function handlePointerDown(e: PointerEvent<HTMLCanvasElement>) {
         e.preventDefault();
         setDrawingState(true);
-        if (loadingState === 'saved' || loadingState === 'error') {
-            updateLoadingState(undefined);
+        if (loadingState !== 'saving') {
+            resetLoadingState();
         }
     }
 

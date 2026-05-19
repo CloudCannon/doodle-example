@@ -9,3 +9,19 @@ collections_config:
 paths:
   static: public
   uploads: public/doodles
+
+_inputs:
+  doodles:
+    type: array
+    options:
+      structures: _structures.doodle
+  src:
+    type: image
+
+_structures:
+  doodle:
+    values:
+      - icon: face
+        value:
+          src:
+          caption:

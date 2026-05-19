@@ -8,6 +8,7 @@ export function Doodler() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [caption, setCaption] = useState<string>('');
     const [savedPixels, setSavedPixels] = useState<CoordArray[]>([]);
+    const [loadingState, setLoadingState] = useState<'saving' | 'saved' | 'error' | undefined>(undefined);
     const [currentStateMessage, setCurrentStateMessage] = useState<string | undefined>(undefined);
     const [inCloudCannonEditor, setInCloudCannonEditor] = useState<boolean>(false);
 
@@ -39,6 +40,7 @@ export function Doodler() {
 
     async function submit() {
         setCurrentStateMessage('Your doodle is being saved to the site...');
+        setLoadingState('saving');
         
         try {
             const cloudcannonApi = (window as any).CloudCannonAPI.v1;
@@ -54,11 +56,18 @@ export function Doodler() {
             const canvas = canvasRef.current;
             if (!canvas) {
                 setCurrentStateMessage('Lost reference to the canvas.');
+                setLoadingState('error');
                 return;
             }
 
             setCurrentStateMessage('Processing your artwork...');
             const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve));
+            if (!blob) {
+                setCurrentStateMessage('Something went wrong turning this drawing into an image file.');
+                setLoadingState('error');
+                return;
+            }
+
             setCurrentStateMessage('Uploading to CloudCannon...');
             const uploadedPath = await cloudcannonApi.uploadFile(
                 new File([blob], 'doodle.png'),
@@ -78,7 +87,8 @@ export function Doodler() {
             file.releaseLock();
         } catch (e) {
             const errorMessage = e instanceof Error && e.message ? `: ${e.message}` : undefined;
-            setCurrentStateMessage(`Oh no, something went wrong${errorMessage}`);
+            setCurrentStateMessage(`Something went wrong${errorMessage}`);
+            setLoadingState('error');
             return;
         }
 
@@ -95,8 +105,9 @@ export function Doodler() {
         <h1>Why not draw something?</h1>
 
         <DoodleCanvas
-            loadingState={currentStateMessage}
-            updateLoadingState={setCurrentStateMessage}
+            canvasRef={canvasRef}
+            loadingState={loadingState}
+            resetLoadingState={() => {setCurrentStateMessage(undefined); setLoadingState(undefined)}}
             finishDraw={(newPixels: CoordArray) => { setSavedPixels([...savedPixels, [...newPixels]]); }}
         ></DoodleCanvas>
         
