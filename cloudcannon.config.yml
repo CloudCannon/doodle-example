@@ -1,0 +1,11 @@
+collections_config:
+  pages:
+    path: src/pages
+    icon: wysiwyg
+  data:
+    path: src/data
+    icon: data_usage
+
+paths:
+  static: public
+  uploads: public/doodles

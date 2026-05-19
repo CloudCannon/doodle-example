@@ -1,4 +1,4 @@
-import { DoodleCanvas } from "../components/doodle-canvas";
+import { DoodleCanvas } from "./doodle-canvas";
 import { useState, useRef, useEffect } from "react"
 
 export type CoordArray = [number, number][];
@@ -6,13 +6,13 @@ export type CoordArray = [number, number][];
 export function Doodler() {
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [caption, setCaption] = useState<string>('');
     const [savedPixels, setSavedPixels] = useState<CoordArray[]>([]);
-    const [loadingState, setLoadingState] = useState<string | undefined>(undefined);
+    const [currentStateMessage, setCurrentStateMessage] = useState<string | undefined>(undefined);
     const [inCloudCannonEditor, setInCloudCannonEditor] = useState<boolean>(false);
 
     useEffect(() => {
-        // setInCloudCannonEditor((window as any).inEditorMode);
-        setInCloudCannonEditor(true);
+        setInCloudCannonEditor((window as any).inEditorMode);
     })
 
     function undo() {
@@ -38,11 +38,13 @@ export function Doodler() {
     }
 
     async function submit() {
-        setLoadingState('saving');
-        const cloudcannonApi = (window as any).CloudCannonAPI.v1;
-
+        setCurrentStateMessage('Your doodle is being saved to the site...');
+        
         try {
+            const cloudcannonApi = (window as any).CloudCannonAPI.v1;
             const file = cloudcannonApi.file('/src/data/doodles.json');
+
+            setCurrentStateMessage('Claiming file lock...');
             const {readOnly } = await file.claimLock();
             if (readOnly) {
                 window.setTimeout(submit, 1000);
@@ -51,10 +53,13 @@ export function Doodler() {
 
             const canvas = canvasRef.current;
             if (!canvas) {
-                // handle no canvas
+                setCurrentStateMessage('Lost reference to the canvas.');
                 return;
             }
+
+            setCurrentStateMessage('Processing your artwork...');
             const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve));
+            setCurrentStateMessage('Uploading to CloudCannon...');
             const uploadedPath = await cloudcannonApi.uploadFile(
                 new File([blob], 'doodle.png'),
                 { options: {
@@ -63,44 +68,53 @@ export function Doodler() {
                     static: 'public'
                 }}
             );
+            setCurrentStateMessage('Adding to the gallery...');
             const length = JSON.parse(await file.get()).doodles.length
             await file.data.addArrayItem({
                 slug: 'doodles',
                 index: length,
-                value: uploadedPath
+                value: { src: uploadedPath, caption }
             });
             file.releaseLock();
         } catch (e) {
-            setLoadingState('error');
+            const errorMessage = e instanceof Error && e.message ? `: ${e.message}` : undefined;
+            setCurrentStateMessage(`Oh no, something went wrong${errorMessage}`);
+            return;
         }
 
         setSavedPixels([]);
         redraw();
-        setLoadingState('saved');
+        setCurrentStateMessage('Ready! Click "Save" in the top-right, select all the files and confirm. Your doodle will appear on the site shortly after.');
     }
 
     if (!inCloudCannonEditor) {
-        return <></>;
+        return undefined;
     }
 
     return (<>
         <h1>Why not draw something?</h1>
 
         <DoodleCanvas
-            loadingState={loadingState}
-            updateLoadingState={setLoadingState}
+            loadingState={currentStateMessage}
+            updateLoadingState={setCurrentStateMessage}
             finishDraw={(newPixels: CoordArray) => { setSavedPixels([...savedPixels, [...newPixels]]); }}
         ></DoodleCanvas>
         
         <div style={{height: "50px"}} className="flex-column">
-            <button type="button" disabled={!!loadingState} onClick={undo}>← Undo</button>
+            <button type="button" disabled={!!currentStateMessage} onClick={undo}>← Undo</button>
         </div>
 
     <div className="flex-column">
-        <button type="button" disabled={!!loadingState} onClick={submit}>Finish and submit!</button>
-        {loadingState === 'saving' && <p>Your doodle is being saved to the site!</p>}
-        {loadingState === 'saved' && <p>Ready!! <strong>Click "Save"</strong> in the top-right, <strong>select all the files</strong> and confirm! Your doodle will appear on the site shortly after.</p>}
-        {loadingState === 'error' && <p>Oh no, something went wrong, sorry about that.</p>}
+
+        <label>
+            Caption for the new image<br></br>
+            <input type="text" onInput={(e) => {
+                setCaption(e.currentTarget.value);
+            }} />
+        </label>
+
+        <button type="button" disabled={!!currentStateMessage} onClick={submit}>Finish and submit</button>
+        {currentStateMessage ? <p>{currentStateMessage}</p> : undefined}
     </div>
     </>)
 }

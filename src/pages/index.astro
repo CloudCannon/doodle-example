@@ -1,5 +1,6 @@
 ---
-import { Doodler } from "./doodle.tsx";
+import { Doodler } from "../components/doodle.tsx";
+import { doodles } from '../data/doodles.json';
 ---
 
 <html lang="en">
@@ -7,12 +8,20 @@ import { Doodler } from "./doodle.tsx";
 		<meta charset="utf-8" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
 		<link rel="stylesheet" href="/main.css" />
 		<title>Doodle</title>
 	</head>
 	<body class="flex-column justify-center">
 		<Doodler client:load />
+
+		{doodles.length ? <h2>Gallery</h2> : undefined}
+		{doodles.map(({src, caption}) => {
+			return (<figure>
+					<img src={src} alt={null} width="300" height="300" />
+					<figcaption>{caption}</figcaption>
+				</figure>);
+		})}
+
 	</body>
 </html>
