@@ -1,3 +1,12 @@
 {
-    "doodles": [{ "src": "/favicon.png", "caption": "COOL S" }]
+    "doodles": [
+        {
+            "src": "/doodles/doodle.png",
+            "caption": "COOL S"
+        },
+        {
+            "src": "/doodles/doodle-1.png",
+            "caption": "kat"
+        }
+    ]
 }
