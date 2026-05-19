@@ -44,8 +44,17 @@ export function Doodler() {
         
         try {
             const cloudcannonApi = (window as any).CloudCannonAPI.v1;
+            /**
+             * First we'll get a reference to the file we want to save to.
+             */
             const file = cloudcannonApi.file('/src/data/doodles.json');
 
+            
+            /**
+             * Next we need to claim a lock on that file,
+             * to prevent race condition edits with any other 
+             * person actively editing the site.
+             */
             setCurrentStateMessage('Claiming file lock...');
             const {readOnly } = await file.claimLock();
             if (readOnly) {
@@ -68,6 +77,11 @@ export function Doodler() {
                 return;
             }
 
+            /**
+             * We've turned out canvas into a blob. Now we
+             * want to upload that blob as a new .png in
+             * the /public/ directory.
+             */
             setCurrentStateMessage('Uploading to CloudCannon...');
             const uploadedPath = await cloudcannonApi.uploadFile(
                 new File([blob], 'doodle.png'),
@@ -77,6 +91,12 @@ export function Doodler() {
                     static: 'public'
                 }}
             );
+
+            /**
+             * Finally, we'll update the array in our data file,
+             * adding an item that references our newly uploaded
+             * file and attaches a caption.
+             */
             setCurrentStateMessage('Adding to the gallery...');
             const length = JSON.parse(await file.get()).doodles.length
             await file.data.addArrayItem({
@@ -84,7 +104,6 @@ export function Doodler() {
                 index: length,
                 value: { src: uploadedPath, caption }
             });
-            file.releaseLock();
         } catch (e) {
             const errorMessage = e instanceof Error && e.message ? `: ${e.message}` : undefined;
             setCurrentStateMessage(`Something went wrong${errorMessage}`);
