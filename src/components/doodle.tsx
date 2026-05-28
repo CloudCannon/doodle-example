@@ -1,13 +1,13 @@
 import { DoodleCanvas } from "./doodle-canvas";
 import { useState, useRef, useEffect } from "react"
-import type { CloudCannonVisualEditorWindow } from '@cloudcannon/visual-editor-api';
+import type { CloudCannonVisualEditorAPIV1, CloudCannonVisualEditorWindow } from '@cloudcannon/visual-editor-api';
 
 export type CoordArray = [number, number][];
 
 declare const window: CloudCannonVisualEditorWindow & { inEditorMode: true | undefined }
 
 export function Doodler() {
-    const cloudcannonApi = window.CloudCannonAPI?.useVersion('v1', true);
+    let cloudcannonApi: CloudCannonVisualEditorAPIV1 | undefined;
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [caption, setCaption] = useState<string>('');
     const [savedPixels, setSavedPixels] = useState<CoordArray[]>([]);
@@ -16,7 +16,10 @@ export function Doodler() {
     const [inCloudCannonEditor, setInCloudCannonEditor] = useState<boolean>(false);
 
     useEffect(() => {
-        setInCloudCannonEditor(!!window.inEditorMode);
+        if (window.inEditorMode) {
+            setInCloudCannonEditor(!!window.inEditorMode);
+            cloudcannonApi = window.CloudCannonAPI?.useVersion('v1', true);
+        }
     })
 
     function undo() {
