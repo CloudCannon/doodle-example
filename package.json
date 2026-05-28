@@ -18,5 +18,9 @@
     "astro": "^6.3.5",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
+  },
+  "devDependencies": {
+    "@cloudcannon/visual-editor-api": "^0.0.16",
+    "typescript": "^6.0.3"
   }
 }

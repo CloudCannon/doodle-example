@@ -1,10 +1,13 @@
 import { DoodleCanvas } from "./doodle-canvas";
 import { useState, useRef, useEffect } from "react"
+import type { CloudCannonVisualEditorWindow } from '@cloudcannon/visual-editor-api';
 
 export type CoordArray = [number, number][];
 
-export function Doodler() {
+declare const window: CloudCannonVisualEditorWindow & { inEditorMode: true | undefined }
 
+export function Doodler() {
+    const cloudcannonApi = window.CloudCannonAPI?.useVersion('v1', true);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [caption, setCaption] = useState<string>('');
     const [savedPixels, setSavedPixels] = useState<CoordArray[]>([]);
@@ -13,7 +16,7 @@ export function Doodler() {
     const [inCloudCannonEditor, setInCloudCannonEditor] = useState<boolean>(false);
 
     useEffect(() => {
-        setInCloudCannonEditor((window as any).inEditorMode);
+        setInCloudCannonEditor(!!window.inEditorMode);
     })
 
     function undo() {
@@ -43,12 +46,14 @@ export function Doodler() {
         setLoadingState('saving');
         
         try {
-            const cloudcannonApi = (window as any).CloudCannonAPI.v1;
+            if (cloudcannonApi === undefined) {
+                throw new Error('Can\'t access the CloudCannon API! Refresh and try again.');
+            }
+
             /**
              * First we'll get a reference to the file we want to save to.
              */
             const file = cloudcannonApi.file('/src/data/doodles.json');
-
             
             /**
              * Next we need to claim a lock on that file,
@@ -56,25 +61,26 @@ export function Doodler() {
              * person actively editing the site.
              */
             setCurrentStateMessage('Claiming file lock...');
-            const {readOnly } = await file.claimLock();
-            if (readOnly) {
-                window.setTimeout(submit, 1000);
-                return;
+            let readOnly = true;
+            for (let fileLockAttempts = 0; readOnly; fileLockAttempts++) {
+                readOnly = (await file.claimLock()).readOnly;
+                if (readOnly) {
+                    if (fileLockAttempts > 3) {
+                        throw new Error('Someone else is editing this file. Try again in a second!')
+                    } 
+                    await new Promise((resolve) => window.setTimeout(resolve, 1000));
+                }
             }
 
             const canvas = canvasRef.current;
             if (!canvas) {
-                setCurrentStateMessage('Lost reference to the canvas.');
-                setLoadingState('error');
-                return;
+                throw new Error('Lost reference to the canvas.');
             }
 
             setCurrentStateMessage('Processing your artwork...');
             const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve));
             if (!blob) {
-                setCurrentStateMessage('Something went wrong turning this drawing into an image file.');
-                setLoadingState('error');
-                return;
+                throw new Error("couldn't turn this drawing into an image file");
             }
 
             /**
@@ -85,11 +91,16 @@ export function Doodler() {
             setCurrentStateMessage('Uploading to CloudCannon...');
             const uploadedPath = await cloudcannonApi.uploadFile(
                 new File([blob], 'doodle.png'),
-                { options: {
-                    uploads: 'public/doodles',
-                    uploads_filename: 'doodle[count].png',
-                    static: 'public'
-                }}
+                { 
+                    type: 'image',
+                    options: {
+                        paths: {
+                            uploads: 'public/doodles',
+                            uploads_filename: 'doodle[count].png',
+                            static: 'public'
+                        },
+                    }
+                }
             );
 
             /**
@@ -98,10 +109,14 @@ export function Doodler() {
              * file and attaches a caption.
              */
             setCurrentStateMessage('Adding to the gallery...');
-            const length = JSON.parse(await file.get()).doodles.length
+            const doodles = await file.data.get({ slug: 'doodles' });
+            if (typeof doodles !== 'object' || typeof doodles.length !== 'number') {
+                throw new Error('The data file is incorrectly formatted.');
+            }
+
             await file.data.addArrayItem({
                 slug: 'doodles',
-                index: length,
+                index: doodles.length,
                 value: { src: uploadedPath, caption }
             });
         } catch (e) {
