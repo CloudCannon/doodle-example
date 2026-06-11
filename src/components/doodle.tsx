@@ -45,18 +45,22 @@ export function Doodler() {
     }
 
     async function submit() {
+        if (cloudcannonApi === undefined) {
+            setCurrentStateMessage('Can\'t access the CloudCannon API! Refresh and try again.');
+            setLoadingState('error');
+            return;
+        }
+
         setCurrentStateMessage('Your doodle is being saved to the site...');
         setLoadingState('saving');
+
+        const file = cloudcannonApi.file('/src/data/doodles.json');
         
         try {
-            if (cloudcannonApi === undefined) {
-                throw new Error('Can\'t access the CloudCannon API! Refresh and try again.');
-            }
 
             /**
              * First we'll get a reference to the file we want to save to.
              */
-            const file = cloudcannonApi.file('/src/data/doodles.json');
             
             /**
              * Next we need to claim a lock on that file,
@@ -127,6 +131,9 @@ export function Doodler() {
             setCurrentStateMessage(`Something went wrong${errorMessage}`);
             setLoadingState('error');
             return;
+        } finally {
+            /** Release our lock on the file after editing is finished. */
+            file.releaseLock();
         }
 
         setSavedPixels([]);
