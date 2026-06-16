@@ -1,28 +1,56 @@
 ---
 import { Doodler } from "../components/doodle.tsx";
 import { doodles } from '../data/doodles.json';
+import DecorativeDoodles from '../components/decorative-doodles.tsx';
+
+const colors = [
+	'pink',
+	'cyan',
+	'yellow',
+	'blue',
+	'lime',
+];
 ---
 
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" href="/favicon.png" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta name="generator" content={Astro.generator} />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link rel="stylesheet" href="/main.css" />
-		<title>Doodle</title>
+		<title>Doodle Time</title>
 	</head>
 	<body>
-		<Doodler client:load />
+		<main>
+			<Doodler client:load />
 
-		<div class="flex-column justify-center">
-			{doodles.length ? <h2>Gallery</h2> : undefined}
-			{doodles.map(({src, caption}) => {
-				return (<figure>
-						<img src={src} alt={null} width="300" height="300" />
-						<figcaption>{caption}</figcaption>
-					</figure>);
-			})}
-		</div>
+			{doodles.length ? (
+				<section class="wall">
+					<div class="wall-head">
+						<h2>Gallery</h2>
+					</div>
+					<div class="bento gallery">
+						{doodles.map(({src, caption}, index) => {
+							return (
+								<figure
+									class='tile'
+									style={{'--accent': `var(--${colors[index % colors.length]})`}}
+								>
+									<div class="tile-img">
+										<img src={src} alt={null} width="300" height="300" />
+									</div>
+									<figcaption class="tile-cap">{caption}</figcaption>
+								</figure>
+							);
+						})}
+					</div>
+				</section>
+			) : undefined}
 
+			<DecorativeDoodles />
+		</main>
 	</body>
 </html>

@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react"
 import type { CloudCannonVisualEditorAPIV1, CloudCannonVisualEditorWindow } from '@cloudcannon/visual-editor-api';
 
 export type CoordArray = [number, number][];
+const CANVAS_SIZE = 500;
 
 declare const window: CloudCannonVisualEditorWindow & { inEditorMode: true | undefined }
 
@@ -16,8 +17,8 @@ export function Doodler() {
     const [inCloudCannonEditor, setInCloudCannonEditor] = useState<boolean>(false);
 
     useEffect(() => {
+        setInCloudCannonEditor(!!window.inEditorMode || true);
         if (window.inEditorMode) {
-            setInCloudCannonEditor(!!window.inEditorMode);
             cloudcannonApi = window.CloudCannonAPI?.useVersion('v1', true);
         }
     })
@@ -27,10 +28,18 @@ export function Doodler() {
         redraw();
     }
 
+    function clear() {
+        setSavedPixels([]);
+        const context = canvasRef.current?.getContext('2d');
+        if (context) {
+            context.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        }
+    }
+
     function redraw() {
         const context = canvasRef.current?.getContext('2d');
         if (context) {
-            context.clearRect(0, 0, 300, 300);
+            context.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
             for (const pixelArray of savedPixels) {
                 if (pixelArray?.length > 1) {
                     context.beginPath();
@@ -136,42 +145,65 @@ export function Doodler() {
             file.releaseLock();
         }
 
-        setSavedPixels([]);
-        redraw();
+        clear();
         setCurrentStateMessage('Ready! Click "Save" in the top-right, select all the files and confirm. Your doodle will appear on the site shortly after.');
+        setLoadingState('saved');
     }
 
     if (!inCloudCannonEditor) {
         return undefined;
     }
 
-    return (<div className="cloudcannon-visual-editor-component">
-        <div className="flex-column justify-center">
-            <h1>Why not draw something?</h1>
+    return (<section className="cloudcannon-visual-editor-component">
+        <h1 className="doodler-title">DOODLE TIME</h1>
+        <p>
+            Welcome to the CloudCannon Visual Editor!<br/>
+            Draw something fun on the canvas below,
+            give it a name, and add it to the collection. It will appear on the homepage of this
+            website, and in the list below!
+        </p>
 
-            <DoodleCanvas
-                canvasRef={canvasRef}
-                loadingState={loadingState}
-                resetLoadingState={() => {setCurrentStateMessage(undefined); setLoadingState(undefined)}}
-                finishDraw={(newPixels: CoordArray) => { setSavedPixels([...savedPixels, [...newPixels]]); }}
-            ></DoodleCanvas>
-            
-            <div className="flex-column">
-                <button type="button" disabled={!!currentStateMessage} onClick={undo}>← Undo</button>
+        <div className="doodler-container">
+
+            <div className="canvas-col">
+                <div className="canvas-frame">
+                    <DoodleCanvas
+                        canvasRef={canvasRef}
+                        loadingState={loadingState}
+                        resetLoadingState={() => {setCurrentStateMessage(undefined); setLoadingState(undefined)}}
+                        finishDraw={(newPixels: CoordArray) => { setSavedPixels([...savedPixels, [...newPixels]]); }}
+                    />
+                </div>
+                <p>Click and drag inside the frame to draw.</p>
             </div>
 
-            <div className="flex-column">
-                <div>
-                    <label htmlFor="caption">Caption for the new image (required)</label>
-                    <input type="text" id="caption" onInput={(e) => {
-                        setCaption(e.currentTarget.value);
-                    }} />
+            <form className="controls doodler-controls" onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
+                <div className="button-row">
+                    <button type="button" className="btn" disabled={!!currentStateMessage || !savedPixels.length} onClick={undo}>
+                        <span aria-hidden="true">&#8617;</span> Undo stroke
+                    </button>
+                    <button type="button" className="btn" disabled={!!currentStateMessage || !savedPixels.length} onClick={clear}>
+                        <span aria-hidden="true">&#10005;</span> Start over
+                    </button>
                 </div>
 
+                <div className="field">
+                    <label htmlFor="caption">
+                        Caption your art
+                    </label>
+                    <input className="input" type="text" id="caption" placeholder="e.g. my cool doodle ♡"
+                        maxLength={40} value={caption}
+                        onInput={(e) => setCaption(e.currentTarget.value)} />
+                    
+                </div>
 
-                <button type="button" disabled={!!currentStateMessage || !caption} onClick={submit}>Finish and submit</button>
-                {currentStateMessage ? <p>{currentStateMessage}</p> : undefined}
-            </div>
+                <button className="btn btn-primary" type="submit" disabled={!!currentStateMessage || !caption.trim()}>
+                    Add to the gallery
+                </button>
+
+                <p role="alert">{currentStateMessage}</p>
+            </form>
+            
         </div>
-    </div>)
+    </section>)
 }

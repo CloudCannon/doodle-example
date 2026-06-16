@@ -51,9 +51,8 @@ export function DoodleCanvas({loadingState, resetLoadingState, finishDraw, canva
 
 
     return (<canvas
-            className="box"
-            width={300}
-            height={300}
+            width={500}
+            height={500}
             ref={canvasRef}
             onPointerMove={handlePointerMove}
             onPointerDown={handlePointerDown}
@@ -61,10 +60,5 @@ export function DoodleCanvas({loadingState, resetLoadingState, finishDraw, canva
             onPointerOut={endDraw}
             onPointerCancel={endDraw}
             onPointerLeave={endDraw}
-        >
-            {activePixels.map((coord) => {
-                const [x, y] = coord;
-                return <div key={coord.join('-')} className="pixel" style={{left: `${x}px`, top: `${y}px`}}></div>;
-            })}
-        </canvas>);
+        />);
 }
