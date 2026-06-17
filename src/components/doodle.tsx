@@ -177,7 +177,7 @@ export function Doodler() {
                 <p>Click and drag inside the frame to draw.</p>
             </div>
 
-            <form className="controls doodler-controls" onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
+            <div className="controls doodler-controls">
                 <div className="button-row">
                     <button type="button" className="btn" disabled={!!currentStateMessage || !savedPixels.length} onClick={undo}>
                         <span aria-hidden="true">&#8617;</span> Undo stroke
@@ -197,12 +197,12 @@ export function Doodler() {
                     
                 </div>
 
-                <button className="btn btn-primary" type="submit" disabled={!!currentStateMessage || !caption.trim()}>
+                <button className="btn btn-primary" type="button" disabled={!!currentStateMessage || !caption.trim()} onClick={submit}>
                     Add to the gallery
                 </button>
 
                 <p role="alert">{currentStateMessage}</p>
-            </form>
+            </div>
             
         </div>
     </section>)

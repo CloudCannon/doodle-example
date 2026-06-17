@@ -2,6 +2,7 @@ collections_config:
   pages:
     path: src/pages
     icon: wysiwyg
+    url: /[slug]/
   data:
     path: src/data
     icon: data_usage
