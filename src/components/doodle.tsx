@@ -17,7 +17,7 @@ export function Doodler() {
     const [inCloudCannonEditor, setInCloudCannonEditor] = useState<boolean>(false);
 
     useEffect(() => {
-        setInCloudCannonEditor(!!window.inEditorMode || true);
+        setInCloudCannonEditor(!!window.inEditorMode);
         if (window.inEditorMode) {
             cloudcannonApi = window.CloudCannonAPI?.useVersion('v1', true);
         }
