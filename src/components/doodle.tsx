@@ -8,7 +8,7 @@ const CANVAS_SIZE = 500;
 declare const window: CloudCannonVisualEditorWindow & { inEditorMode: true | undefined }
 
 export function Doodler() {
-    let cloudcannonApi: CloudCannonVisualEditorAPIV1 | undefined;
+    const apiRef = useRef<CloudCannonVisualEditorAPIV1 | undefined>(undefined);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [caption, setCaption] = useState<string>('');
     const [savedPixels, setSavedPixels] = useState<CoordArray[]>([]);
@@ -17,11 +17,23 @@ export function Doodler() {
     const [inCloudCannonEditor, setInCloudCannonEditor] = useState<boolean>(false);
 
     useEffect(() => {
-        setInCloudCannonEditor(!!window.inEditorMode);
-        if (window.inEditorMode) {
-            cloudcannonApi = window.CloudCannonAPI?.useVersion('v1', true);
+        if (!window.inEditorMode) {
+            return;
         }
-    })
+        setInCloudCannonEditor(true);
+
+        const initApi = () => {
+            apiRef.current = window.CloudCannonAPI?.useVersion('v1', true);
+        };
+
+        if (window.CloudCannonAPI) {
+            initApi();
+            return;
+        }
+
+        document.addEventListener('cloudcannon:load', initApi, { once: true });
+        return () => document.removeEventListener('cloudcannon:load', initApi);
+    }, [])
 
     function undo() {
         savedPixels.pop();
@@ -54,6 +66,7 @@ export function Doodler() {
     }
 
     async function submit() {
+        const cloudcannonApi = apiRef.current;
         if (cloudcannonApi === undefined) {
             setCurrentStateMessage('Can\'t access the CloudCannon API! Refresh and try again.');
             setLoadingState('error');
