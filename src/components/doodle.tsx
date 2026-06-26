@@ -92,7 +92,7 @@ export function Doodler() {
             setCurrentStateMessage('Claiming file lock...');
             let readOnly = true;
             for (let fileLockAttempts = 0; readOnly; fileLockAttempts++) {
-                readOnly = (await file.claimLock()).readOnly;
+                readOnly = (await file.claimLock())?.readOnly ?? true;
                 if (readOnly) {
                     if (fileLockAttempts > 3) {
                         throw new Error('Someone else is editing this file. Try again in a second!')
